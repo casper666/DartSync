@@ -26,7 +26,7 @@ fileinfo_entry_t* pre;
 
 //create filetable
 filetable_t* create_filetable(){
-	filetable_t*  filetable = (filetable_t*)malloc(sizeof(filetable_t));
+	filetable_t* filetable = (filetable_t*)malloc(sizeof(filetable_t));
 	memset(filetable,0,sizeof(filetable_t));
 	filetable->filenumber = 0;
 	filetable->isBlocked = 0;
@@ -61,91 +61,86 @@ int init_filetable(filetable_t* fileTable, fileinfo_entry_t* head, char* directo
 }
 
 int compare_filetable(filetable_t* fileTable, filetable_t* temp_fileTable){
-
 	int isSame = 1;
-
-        filetable_entry_t* head1 = fileTable->head;
-        filetable_entry_t* head2 = temp_fileTable->head;
-        while(head1 != NULL){
-                int deleteFlag = 1;
-                while(head2 != NULL){
-                    if(!strcmp(head1->fileInfo.filename, head2->fileInfo.filename)){
-                        if(head2->fileInfo.timestamp != head1->fileInfo.timestamp){
-                            isSame = 0;
-                            if(head2->fileInfo.type == NORMALFILE){
-                            	if(initDownload(head2)<0){
-									fprintf(stderr, "Failed to init download \n");
-									return -1;
-								}
-    							printf("+++++++[modified]file %s has been downloaded by ptp+++++++\n",head2->fileInfo.filename);
-                            }
-						}
-                        deleteFlag = 0;
-                        break;
-                    }
-                    head2 = head2->next;
-                }
-                if(deleteFlag){
-                    isSame = 0;
-					if(head1->fileInfo.type == NORMALFILE){
-						char command[50];
-						sprintf(command,"rm %s",head1->fileInfo.filename);
-						system(command);
-                    	printf("+++++++file %s has been deleted by rm+++++++\n",head1->fileInfo.filename);
-					}else{
-						char command[50];
-						sprintf(command,"rm -r %s",head1->fileInfo.filename);
-						system(command);
-                    	printf("+++++++directory %s has been deleted by rm+++++++\n",head1->fileInfo.filename);
-					}					
-                }
-                head1 = head1->next;
-                head2 = temp_fileTable->head;
-        }
-        head1 = fileTable->head;
-        head2 = temp_fileTable->head;
-        while(head2 != NULL){
-                int addFlag = 1;
-                while(head1 != NULL){
-                        if(!strcmp(head1->fileInfo.filename, head2->fileInfo.filename)){
-                                addFlag = 0;
-                                break;
-                        }
-                        head1 = head1->next;
-                }
-                if(addFlag){
-                    isSame = 0;
-    				if(head2->fileInfo.type == NORMALFILE){
+	filetable_entry_t* head1 = fileTable->head;
+	filetable_entry_t* head2 = temp_fileTable->head;
+	//check if any file in head1 is deleted
+	while(head1 != NULL){
+		int deleteFlag = 1;
+		while(head2 != NULL){
+			if(!strcmp(head1->fileInfo.filename, head2->fileInfo.filename)){
+				if(head2->fileInfo.timestamp != head1->fileInfo.timestamp){
+					isSame = 0;
+					if(head2->fileInfo.type == NORMALFILE){
 						if(initDownload(head2)<0){
 							fprintf(stderr, "Failed to init download \n");
 							return -1;
 						}
-						printf("+++++++[added]file %s has been download by ptp+++++++\n",head2->fileInfo.filename);
-    				}else{
-    					char command1[50];
-						sprintf(command1,"mkdir %s",head2->fileInfo.filename);
-						system(command1);
-    					char date[16];
-    					time_t time_last_modified = head2->fileInfo.timestamp - 14400;
-    					strftime(date,16,"%Y%m%d%H%M.%S",gmtime(&time_last_modified));
-    					char command[150];
-    					sprintf(command,"touch -t %s %s", date, head2->fileInfo.filename);
-    					system(command);
-                    	printf("+++++++[added]directory %s has been download by mkdir+++++++\n",head2->fileInfo.filename);
-    				}
-    				
-                }
-                head2 = head2->next;
-                head1 = fileTable->head;
-        }
-        return isSame == 1 ? -1 : 1;
+						printf("+++++++[modified]file %s has been downloaded by ptp+++++++\n",head2->fileInfo.filename);
+					}
+				}
+				deleteFlag = 0;
+				break;
+			}
+			head2 = head2->next;
+		}
+		if(deleteFlag){
+			isSame = 0;
+			if(head1->fileInfo.type == NORMALFILE){
+				char command[50];
+				sprintf(command,"rm %s",head1->fileInfo.filename);
+				system(command);
+				printf("+++++++file %s has been deleted by rm+++++++\n",head1->fileInfo.filename);
+			}else{
+				char command[50];
+				sprintf(command,"rm -r %s",head1->fileInfo.filename);
+				system(command);
+				printf("+++++++directory %s has been deleted by rm+++++++\n",head1->fileInfo.filename);
+			}
+		}
+		head1 = head1->next;
+		head2 = temp_fileTable->head;
+	}
+	//check if there is any new file in head2
+	head1 = fileTable->head;
+	head2 = temp_fileTable->head;
+	while(head2 != NULL){
+		int addFlag = 1;
+		while(head1 != NULL){
+			if(!strcmp(head1->fileInfo.filename, head2->fileInfo.filename)){
+				addFlag = 0;
+        break;
+			}
+      head1 = head1->next;
+    }
+		if(addFlag){
+			isSame = 0;
+			if(head2->fileInfo.type == NORMALFILE){
+				if(initDownload(head2)<0){
+					fprintf(stderr, "Failed to init download \n");
+					return -1;
+				}
+				printf("+++++++[added]file %s has been download by ptp+++++++\n",head2->fileInfo.filename);
+			}else{
+				char command1[50];
+				sprintf(command1,"mkdir %s",head2->fileInfo.filename);
+				system(command1);
+    		char date[16];
+    		time_t time_last_modified = head2->fileInfo.timestamp - 14400;
+    		strftime(date,16,"%Y%m%d%H%M.%S",gmtime(&time_last_modified));
+    		char command[150];
+    		sprintf(command,"touch -t %s %s", date, head2->fileInfo.filename);
+    		system(command);
+        printf("+++++++[added]directory %s has been download by mkdir+++++++\n",head2->fileInfo.filename);
+			}
+		}
+		head2 = head2->next;
+    head1 = fileTable->head;
+	}
+  return isSame == 1 ? -1 : 1;
 }
 
-
-
-
 //given a new filetabl, update the local one
-
 int update_filetable(filetable_t* fileTable, filetable_t* temp_fileTable, int mode){
 	//block SIGNAL
 	if(fileTable->isBlocked) return -1;
@@ -457,8 +452,8 @@ fileinfo_entry_t* getAllFilesInfo(const char* path, int level){
         	char dfs[length+1];
         	memset(dfs,0,length+1);
         	memcpy(dfs,fullpath,strlen(fullpath));
-    		memcpy(dfs+strlen(fullpath),"/",1);
-            getAllFilesInfo(dfs,level+1); // deep first search
+    			memcpy(dfs+strlen(fullpath),"/",1);
+          getAllFilesInfo(dfs,level+1); // deep first search
         }
     }
     return head;
@@ -467,7 +462,7 @@ fileinfo_entry_t* getAllFilesInfo(const char* path, int level){
 //get a fileinfo of one given file
 //path need be a full path
 fileinfo_entry_t* getFileInfo(const char *path, int type)
-{  
+{
     fileinfo_entry_t* entry = (fileinfo_entry_t*)malloc(sizeof(fileinfo_entry_t));
     memset(entry,0,sizeof(fileinfo_entry_t));
     struct stat statbuff;
@@ -486,7 +481,7 @@ fileinfo_entry_t* getFileInfo(const char *path, int type)
 
 //print FileInfo
 void printFileInfo(fileinfo_entry_t* entry){
-	while(entry != NULL){		
+	while(entry != NULL){
 		printf("filename: %s , ",entry->filename);
     	printf("filesize: %lu, ",entry->size);
     	printf("timestamp: %ld, ",entry->timestamp);
@@ -615,8 +610,8 @@ int initDownload(filetable_entry_t* file_entry){
     if(PTPDownloadRequestSuccessFileRes(file_entry) < 0){
         printf("ptp download res fail\n");
     }
-        
-    
+
+
     printf("download file %s success!!\n",file_entry->fileInfo.filename);
     return 1;
 }
